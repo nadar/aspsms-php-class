@@ -3,6 +3,8 @@
  * @author nadar <basil.suter@indielab.ch>
  * @see https://github.com/nadar/aspsms-php-class
  * 
+ * $id$
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -267,10 +269,14 @@ class Aspsms
         if (count($result) == 0 || !is_array($result)) {
             throw new AspsmsException("Something went wrong while working with the sendTextSms response. Response: \"{$response}\"");
         }
+        // verify if the status code exists in sendStatusCodes
+        if (!array_key_exists($result[1], $this->sendStatusCodes)) {
+            throw new AspsmsException("Error while printing the response code into sendStatus. ResponseCode seems not valid. Response: \"{$response}\"");
+        }
         // send the status as text value into $sendStatus
         $this->sendStatus = $this->sendStatusCodes[$result[1]];
         // if the result is not equal 1 something is wrong
-        if ($result[1] !== 1) {
+        if ($result[1] !== "1") {
             return false;
         }
         // response true
@@ -347,7 +353,7 @@ class Aspsms
      * @return string
      */
     public function getSendStatus () {
-        return $this->sendStatus();
+        return $this->sendStatus;
     }
     
     /**
