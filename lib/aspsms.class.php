@@ -488,10 +488,10 @@ class Aspsms
         $m = substr($date, 2, 2);
         $y = substr($date, 4, 4);
         $h = substr($date, 8, 2);
-        $m = substr($date, 10, 2);
+        $i = substr($date, 10, 2);
         $s = substr($date, 12, 2);
         // but the together and return
-        return "{$d}.{$m}.{$y} {$h}:{$m}:{$s}";
+        return "{$d}.{$m}.{$y} {$h}:{$i}:{$s}";
     }
 }
 
