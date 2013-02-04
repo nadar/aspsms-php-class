@@ -292,10 +292,9 @@ class Aspsms
      * => success-delivery: 1359553540;0;30012013144546;30012013144555;000;;
      * => failure-delivery: 1359555046;2;30012013151053;30012013151053;206;;
      * 
-     * @param numeric   $tracknr    The tracking number which is provided when setting the recipients.
-     * @return array
+     * @param mixed   $tracknr    The tracking number which is provided when setting the recipients. Can be an array of tracking numbers.
+     * @return array (If an array with multiple tracking numbers is provided the response as an assoc array for each tracking number.)
      * @throws AspsmsException
-     * @todo MULTIPLE TRACKNR REQUESTS-RESPONSE-SUMMARY-OUTPUT
      */
     public function deliveryStatus ($tracknr) {
         // set the transaction reference numbers
@@ -304,28 +303,53 @@ class Aspsms
         $response = $this->request("InquireDeliveryNotifications", $this->getOptions(array(
             "TransactionReferenceNumbers"
         )));
-        // explode the response
-        $result = explode(";", $response);
-        // error while exploding the response
-        if (count($result) == 0 || !is_array($result)) {
-            throw new AspsmsException("Something went wrong while working with the deliveryStatus response. Response: \"{$response}\"");
-        }
-        // set default value for Reasoncode
-        if ($result[1] == 0) {
-            // no error, but reasocode seems to 000 anytime when success... which is wrong!
-            $reasoncode = "-";
-        } else {
-            // set string for reasoncode
-            $reasoncode = (isset($result[4]) && isset($this->deliveryReasonCodes[$result[4]])) ? $this->deliveryReasonCodes[$result[4]] : null;
-        }
-        // return assoc array with all results
-        return array(
-            "transactionReferenceNumber" => $result[0],
-            "deliveryStatus" => $this->deliveryStatusCodes[$result[1]],
-            "submissionDate" => $this->dateSplitter($result[2]),
-            "notificationDate" => $this->dateSplitter($result[3]),
-            "reasoncode" => $reasoncode
-        );
+		// response array
+		$responseArray = array();
+		// count the response array
+		$i = 0;
+		// foreach multiple response codes
+		foreach (explode(";;", $response) as $trackResponse) {
+			// verify empty strings
+			if (strlen($trackResponse) == 0 || empty($trackResponse)) {
+				// skip this entrie
+				continue;
+			}
+			// explode the response
+	        $result = explode(";", $trackResponse);
+	        // error while exploding the response
+	        if (count($result) == 0 || !is_array($result)) {
+	            throw new AspsmsException("Something went wrong while working with the deliveryStatus response. Response: \"{$response}\"");
+	        }
+	        // set default value for Reasoncode
+	        if ($result[1] == 0) {
+	            // no error, but reasocode seems to 000 anytime when success... which is wrong!
+	            $reasoncode = "-";
+	        } else {
+	            // set string for reasoncode
+	            $reasoncode = (isset($result[4]) && isset($this->deliveryReasonCodes[$result[4]])) ? $this->deliveryReasonCodes[$result[4]] : null;
+	        }
+			// add assoc array
+			$responseArray[$result[0]] = array(
+	            "transactionReferenceNumber" => $result[0],
+	            "deliveryStatus" => $this->deliveryStatusCodes[$result[1]],
+	            "submissionDate" => $this->dateSplitter($result[2]),
+	            "notificationDate" => $this->dateSplitter($result[3]),
+	            "reasoncode" => $reasoncode
+	        );
+			// add i+1
+			$i++;
+		}
+		// see if we have an error with the response
+		if ($i === 0) {
+			throw new AspsmsException("Error while explode multiple response elements. Response: \"{$response}\"");
+		}
+		// if there is only 1 result, we have to return only the single assoc array
+		if ($i === 1) {
+			// return the first element (there is only one)
+			return array_shift(array_values($responseArray));
+		}
+		// multiple tracking codes enterd, return the whole array
+		return $responseArray;
     }
     
     /**

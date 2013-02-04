@@ -1,5 +1,7 @@
 <?php
 
+include "../lib/aspsms.class.php";
+
 // init aspsms class with originator option
 $aspsms = new Aspsms('<YOUR_KEY>', '<YOUR_PASSWORD>', array(
     'Originator' => '<MY_SENDER_NAME>'
@@ -14,10 +16,10 @@ $send = $aspsms->sendTextSms('<YOUR_SMS_MESSAGE>', array(
 
 // check for sending errors
 if (!$send) {
-    echo "Aspsms Error: " . $send->getSendStatus();
+    echo "Aspsms Error: " . $aspsms->getSendStatus();
 }
 
-// script needs to sleep 10 seconds, because the delivery takes some time
+// becuase the delivery takes some time, the script sleeps for 10 seconds.
 sleep(10);
 
 // check status after 10 seconds

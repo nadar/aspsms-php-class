@@ -31,7 +31,7 @@ Example code
 
 		// check for sending errors
 		if (!$send) {
-    		echo "Aspsms Error: " . $send->getSendStatus();
+    		echo "Aspsms Error: " . $aspsms->getSendStatus();
 		}
 
 		// script needs to sleep 10 seconds, because the delivery takes some time
