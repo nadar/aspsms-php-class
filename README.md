@@ -16,6 +16,8 @@ Example code
 ------------
 
 	<?php
+		// include library
+		include 'lib/aspsms.class.php';
 
 		// init aspsms class with originator option
 		$aspsms = new Aspsms('<YOUR_KEY>', '<YOUR_PASSWORD>', array(
@@ -31,7 +33,7 @@ Example code
 
 		// check for sending errors
 		if (!$send) {
-    		echo "Aspsms Error: " . $aspsms->getSendStatus();
+    		echo "Aspsms error while sending: " . $aspsms->getSendStatus();
 		}
 
 		// script needs to sleep 10 seconds, because the delivery takes some time
@@ -43,5 +45,4 @@ Example code
 		$status3 = $aspsms->deliveryStatus('<TRACKING_NR3>');
 
 		var_dump($status1, $status2, $status3);
-
 	?>
