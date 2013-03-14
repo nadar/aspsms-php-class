@@ -346,7 +346,9 @@ class Aspsms
 		// if there is only 1 result, we have to return only the single assoc array
 		if ($i === 1) {
 			// return the first element (there is only one)
-			return array_shift(array_values($responseArray));
+            foreach ($responseArray as $item) {
+                return $item;
+            }
 		}
 		// multiple tracking codes enterd, return the whole array
 		return $responseArray;
