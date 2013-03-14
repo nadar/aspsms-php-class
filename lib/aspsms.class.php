@@ -320,7 +320,7 @@ class Aspsms
 	        if (count($result) == 0 || !is_array($result)) {
 	            throw new AspsmsException("Something went wrong while working with the deliveryStatus response. Response: \"{$response}\"");
 	        }
-	        // set default value for Reasoncode
+	        // set default value for reasoncode
 	        if ($result[1] == 0) {
 	            // no error, but reasocode seems to 000 anytime when success... which is wrong!
 	            $reasoncode = "-";
@@ -522,10 +522,17 @@ class Aspsms
 /**
  * Little Helper class to make the curl-post-request to the aspsms server.
  * 
+ * Usage example:
+ * 
+ * $request = new AspsmsRequest('https://webservice.aspsms.com/aspsmsx2.asmx/CheckCredits');
+ * // transfer the request
+ * $response = $request->transfer();
+ * // flush the request object
+ * $request->flush();
+ * 
  * @package Aspsms
  * @author nadar <basil.suter@indielab.ch>
  * @see https://github.com/nadar/aspsms-php-class
- * @todo Example-usage-phpdoc
  */
 class AspsmsRequest
 {
@@ -591,7 +598,7 @@ class AspsmsRequest
     /**
      * Could not use http_build_query() because of &, ; & : signs changing, need to build a 
      * simple small class to build the strings.
-     * @todo utf8_encode? url_encode?
+     * @todo url_encoding the values (verify affecting requests first)
      * @param array     $values     Key value pared parameter values
      * @return string 
      */
@@ -642,7 +649,6 @@ class AspsmsRequest
  * @package Aspsms
  * @author nadar <basil.suter@indielab.ch>
  * @see https://github.com/nadar/aspsms-php-class
- * @todo Getting the previus exception to work
  */
 class AspsmsException extends Exception
 {}
