@@ -24,6 +24,14 @@ if (!function_exists('curl_init')) {
 }
 
 /**
+ * Version information:
+ * 
+ * 1.1:
+ *  - added version constant
+ *  - added static public function to verify the tracking number validity
+ */
+
+/**
  * The Aspsms class provides the basic function to easily send message, check delivery status or 
  * show the available amount of credits.
  * 
@@ -62,6 +70,8 @@ if (!function_exists('curl_init')) {
  */
 class Aspsms
 {
+    const VERSION = 1.1;
+    
     /**
      * Contains the services url [status 30.01.2013]
      * 
@@ -303,55 +313,55 @@ class Aspsms
         $response = $this->request("InquireDeliveryNotifications", $this->getOptions(array(
             "TransactionReferenceNumbers"
         )));
-		// response array
-		$responseArray = array();
-		// count the response array
-		$i = 0;
-		// foreach multiple response codes
-		foreach (explode(";;", $response) as $trackResponse) {
-			// verify empty strings
-			if (strlen($trackResponse) == 0 || empty($trackResponse)) {
-				// skip this entrie
-				continue;
-			}
-			// explode the response
-	        $result = explode(";", $trackResponse);
-	        // error while exploding the response
-	        if (count($result) == 0 || !is_array($result)) {
-	            throw new AspsmsException("Something went wrong while working with the deliveryStatus response. Response: \"{$response}\"");
-	        }
-	        // set default value for reasoncode
-	        if ($result[1] == 0) {
-	            // no error, but reasocode seems to 000 anytime when success... which is wrong!
-	            $reasoncode = "-";
-	        } else {
-	            // set string for reasoncode
-	            $reasoncode = (isset($result[4]) && isset($this->deliveryReasonCodes[$result[4]])) ? $this->deliveryReasonCodes[$result[4]] : null;
-	        }
-			// add assoc array
-			$responseArray[$result[0]] = array(
-	            "transactionReferenceNumber" => $result[0],
-	            "deliveryStatus" => $this->deliveryStatusCodes[$result[1]],
-	            "submissionDate" => $this->dateSplitter($result[2]),
-	            "notificationDate" => $this->dateSplitter($result[3]),
-	            "reasoncode" => $reasoncode
-	        );
-			// add i+1
-			$i++;
-		}
-		// see if we have an error with the response
-		if ($i === 0) {
-			throw new AspsmsException("Error while explode multiple response elements. Response: \"{$response}\"");
-		}
-		// if there is only 1 result, we have to return only the single assoc array
-		if ($i === 1) {
-			// return the first element (there is only one)
+        // response array
+        $responseArray = array();
+        // count the response array
+        $i = 0;
+        // foreach multiple response codes
+        foreach (explode(";;", $response) as $trackResponse) {
+            // verify empty strings
+            if (strlen($trackResponse) == 0 || empty($trackResponse)) {
+                // skip this entrie
+                continue;
+            }
+            // explode the response
+            $result = explode(";", $trackResponse);
+            // error while exploding the response
+            if (count($result) == 0 || !is_array($result)) {
+                throw new AspsmsException("Something went wrong while working with the deliveryStatus response. Response: \"{$response}\"");
+            }
+            // set default value for reasoncode
+            if ($result[1] == 0) {
+                // no error, but reasocode seems to 000 anytime when success... which is wrong!
+                $reasoncode = "-";
+            } else {
+                // set string for reasoncode
+                $reasoncode = (isset($result[4]) && isset($this->deliveryReasonCodes[$result[4]])) ? $this->deliveryReasonCodes[$result[4]] : null;
+            }
+            // add assoc array
+            $responseArray[$result[0]] = array(
+                "transactionReferenceNumber" => $result[0],
+                "deliveryStatus" => $this->deliveryStatusCodes[$result[1]],
+                "submissionDate" => $this->dateSplitter($result[2]),
+                "notificationDate" => $this->dateSplitter($result[3]),
+                "reasoncode" => $reasoncode
+            );
+            // add i+1
+            $i++;
+        }
+        // see if we have an error with the response
+        if ($i === 0) {
+            throw new AspsmsException("Error while explode multiple response elements. Response: \"{$response}\"");
+        }
+        // if there is only 1 result, we have to return only the single assoc array
+        if ($i === 1) {
+            // return the first element (there is only one)
             foreach ($responseArray as $item) {
                 return $item;
             }
-		}
-		// multiple tracking codes enterd, return the whole array
-		return $responseArray;
+        }
+        // multiple tracking codes enterd, return the whole array
+        return $responseArray;
     }
     
     /**
@@ -380,6 +390,17 @@ class Aspsms
      */
     public function getSendStatus () {
         return $this->sendStatus;
+    }
+    
+    /**
+     * Will delete all not allowed signes to store restore tracking number in database or on Aspsms site
+     * 
+     * @param string    $trackingNumber The tracking number to verify
+     * @return string
+     */
+    public static function verifyTrackingNumber ($trackingNumber) {
+        // only a-z A-Z and 0-9 are allowed signs for tracking numbers, preg replace and return.
+        return preg_replace("/[^a-zA-Z0-9]/", "", $trackingNumber);
     }
     
     /**
