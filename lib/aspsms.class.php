@@ -403,6 +403,11 @@ class Aspsms
         return preg_replace("/[^a-zA-Z0-9]/", "", $trackingNumber);
     }
     
+	public static function verifyPhoneNumber ($phoneNumber) {
+		// remove whitespaces, strikes
+		//return preg_replace("/[^a-zA-Z0-9]")
+	}
+	
     /**
      * Execute the CURL HTTP POST request to aspsms server. Below a description of the different actions and their values/options:
      * 
