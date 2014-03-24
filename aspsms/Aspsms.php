@@ -17,6 +17,13 @@
  */
 
 namespace Aspsms; 
+
+use Aspsms\Request;
+use Aspsms\Exception;
+
+// remove those to use your autoloader
+require_once 'Request.php';
+require_once 'Exception.php';
  
 // see if the curl extension is loaded
 if (!function_exists('curl_init')) {
@@ -227,7 +234,7 @@ class Aspsms
      * @param array     $options[optional]  Basic associativ array, available keys see $validOptions array. Commonly used to provide
      *                                      AffiliateId or Originator values.
      * @return boolean
-     * @throws AspsmsException
+     * @throws Exception
      */
     public function sendTextSms ($message, array $recipients, array $options = array()) {
         // set message option
@@ -260,11 +267,11 @@ class Aspsms
         $result = explode(":", $response);
         // error while exploding the response
         if (count($result) == 0 || !is_array($result)) {
-            throw new AspsmsException("Something went wrong while working with the sendTextSms response. Response: \"{$response}\"");
+            throw new Exception("Something went wrong while working with the sendTextSms response. Response: \"{$response}\"");
         }
         // verify if the status code exists in sendStatusCodes
         if (!array_key_exists($result[1], $this->sendStatusCodes)) {
-            throw new AspsmsException("Error while printing the response code into sendStatus. ResponseCode seems not valid. Response: \"{$response}\"");
+            throw new Exception("Error while printing the response code into sendStatus. ResponseCode seems not valid. Response: \"{$response}\"");
         }
         // send the status as text value into $sendStatus
         $this->sendStatus = $this->sendStatusCodes[$result[1]];
@@ -287,7 +294,7 @@ class Aspsms
      * 
      * @param mixed   $tracknr    The tracking number which is provided when setting the recipients. Can be an array of tracking numbers.
      * @return array (If an array with multiple tracking numbers is provided the response as an assoc array for each tracking number.)
-     * @throws AspsmsException
+     * @throws Exception
      */
     public function deliveryStatus ($tracknr) {
         // set the transaction reference numbers
@@ -311,7 +318,7 @@ class Aspsms
             $result = explode(";", $trackResponse);
             // error while exploding the response
             if (count($result) == 0 || count($result) == 1 || !is_array($result)) {
-                throw new AspsmsException("Something went wrong while working with the deliveryStatus response. Response: \"{$response}\"");
+                throw new Exception("Something went wrong while working with the deliveryStatus response. Response: \"{$response}\"");
             }
             // set default value for reasoncode
             if ($result[1] == 0) {
@@ -335,7 +342,7 @@ class Aspsms
         }
         // see if we have an error with the response
         if ($i === 0) {
-            throw new AspsmsException("Wrong tracking number provided. Verify your input.");
+            throw new Exception("Wrong tracking number provided. Verify your input.");
         }
         // if there is only 1 result, we have to return only the single assoc array
         if ($i === 1) {
@@ -352,7 +359,7 @@ class Aspsms
      * Get the amount of left credits connected to your account.
      * 
      * @return integer
-     * @throws AspsmsException
+     * @throws Exception
      */
     public function credits () {
         // make request for "CheckCredits" aspsms method
@@ -361,7 +368,7 @@ class Aspsms
         $result = explode(":", $response);
         // error while exploding the response
         if (count($result) == 0 || !is_array($result)) {
-            throw new AspsmsException("Something went wrong while working with the credits response. Response: \"{$response}\"");
+            throw new Exception("Something went wrong while working with the credits response. Response: \"{$response}\"");
         }
         // return the amount
         return (int)$result[1];
@@ -408,7 +415,7 @@ class Aspsms
      */
     private function request ($action, array $values = array()) {
         // build new AspsmsRequest-Object
-        $request = new AspsmsRequest($this->server . $action, $this->prepareValues($values));
+        $request = new Request($this->server . $action, $this->prepareValues($values));
         // transfer the request
         $response = $request->transfer();
         // flush request class
@@ -459,12 +466,12 @@ class Aspsms
      * @param string    $key    The Option-Key/Name
      * @param string    $value  The value for the Option-Key
      * @return boolean
-     * @throws AspsmsException
+     * @throws Exception
      */
     private function setOption ($key, $value) {
         // see if key is in the validOptions list.
         if (!in_array($key, $this->validOptions)) {
-            throw new AspsmsException("setOption: Could not find the option \"$key\" in the validOptions list!");
+            throw new Exception("setOption: Could not find the option \"$key\" in the validOptions list!");
         }
         // set the options into the currentOptions list
         $this->currentOptions[$key] = $value;
@@ -478,14 +485,14 @@ class Aspsms
      * 
      * @param array     $options    An associativ array containg the the option-keys and option-key-values
      * @return boolean
-     * @throws AspsmsException
+     * @throws Exception
      */
     private function setOptions (array $options) {
         // loop the $options items
         foreach ($options as $key => $value) {
             // see if the key exists int options list
             if (!in_array($key, $this->validOptions)) {
-                throw new AspsmsException("setOptions: Could not find the option \"$key\" in the validOptions list!");
+                throw new Exception("setOptions: Could not find the option \"$key\" in the validOptions list!");
             }
             // set the options into the currentOptions list
             $this->currentOptions[$key] = $value;
@@ -536,137 +543,3 @@ class Aspsms
         return "{$d}.{$m}.{$y} {$h}:{$i}:{$s}";
     }
 }
-
-/**
- * Little Helper class to make the curl-post-request to the aspsms server.
- * 
- * Usage example:
- * 
- * $request = new AspsmsRequest('https://webservice.aspsms.com/aspsmsx2.asmx/CheckCredits');
- * // transfer the request
- * $response = $request->transfer();
- * // flush the request object
- * $request->flush();
- * 
- * @package Aspsms
- * @author nadar <basil.suter@indielab.ch>
- * @see https://github.com/nadar/aspsms-php-class
- */
-class AspsmsRequest
-{
-    /**
-     * Default options for the curl request
-     * 
-     * @param array
-     */
-    private $options = array(
-        CURLOPT_TIMEOUT => 10,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_POST => true
-    );
-    
-    /**
-     * All values which are provided trought value() or __construct()
-     * 
-     * @param array
-     */
-    private $values = array();
-    
-    /**
-     * AspsmsRequest constructor requerd call service url.
-     * 
-     * @param string    $url                The called webservice url
-     * @param array     $values[optional]   Values can be set direct in the class construct or 
-     *                                      via the value() method.
-     */
-    public function __construct ($url, array $values = array()) {
-        // assign CURLOPT_URL into options array
-        $this->options[CURLOPT_URL] = $url;
-        // set basic value keys into values array
-        $this->values = $values;
-    }
-    
-    /**
-     * Optional method to set values.
-     * 
-     * @param string    $key    The POST-FIELD-KEY
-     * @param string    $value  The value of the postfield
-     * @return boolean
-     */
-    public function value($key, $value) {
-        // save values into values array (great comment)
-        $this->values[$key] = $value;
-        // default return
-        return true;
-    }
-    
-    /**
-     * Unset all values from the values array to make new requests.
-     * 
-     * @return boolean
-     */
-    public function flush () {
-        // overwrite $values with empty array()
-        $this->values = array();
-        // default return
-        return true;
-    }
-    
-    /**
-     * Could not use http_build_query() because of &, ; & : signs changing, need to build a 
-     * simple small class to build the strings.
-     * @todo url_encoding the values (verify affecting requests first)
-     * @param array     $values     Key value pared parameter values
-     * @return string 
-     */
-    private function buildPostfields ($values) {
-        $params = array();
-        foreach ($values as $k => $v) {
-            $params[] = $k.'='.$v;
-        }
-        return implode("&", $params);
-    }
-    
-    /**
-     * Init the main curl excution.
-     * 
-     * @return string/mixed
-     * @throws AspsmsException
-     */
-    public function transfer () {
-        // prepare postfields
-        $this->options[CURLOPT_POSTFIELDS] = $this->buildPostfields($this->values);
-        // init curl
-        $curl = curl_init();
-        // set all options into curl object from $options
-        curl_setopt_array($curl, $this->options);
-        // excute the curl and write response into $response
-        $response = curl_exec($curl);
-        // close the curl connection
-        curl_close($curl);
-        // see if response is xml valid (else we have a basic api error)
-        if (preg_match('/\<\?xml(.*)\?\>/', $response)) {
-            // get node content
-            $doc = new \DOMDocument();
-            // load the xml reponse (which is xml)
-            $doc->loadXML($response);
-            // get content from the firstChild (there is no good documentation about aspsms response bodys)
-            $nodeContent = $doc->firstChild->textContent;
-            // return the content
-            return $nodeContent;
-        } else {
-            throw new AspsmsException("API response seems not valid! Response: \"" . trim($response) . "\"");
-        } 
-    }
-}
-
-/**
- * AspsmsEception class
- *
- * @package Aspsms
- * @author nadar <basil.suter@indielab.ch>
- * @see https://github.com/nadar/aspsms-php-class
- */
-class AspsmsException extends \Exception
-{}
